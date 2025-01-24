@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Botón Desplazable con Webhook</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+
+    .slider-container {
+      position: relative;
+      width: 400px;
+      height: 60px;
+      background: #ddd;
+      border-radius: 30px;
+      overflow: hidden;
+    }
+
+    .slider-track {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #eee;
+      transition: background-color 0.3s ease;
+    }
+
+    .slider-button {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 60px;
+      height: 60px;
+      background: #4caf50;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .slider-button.active {
+      box-shadow: 0 0 10px #4caf50;
+    }
+
+    .slider-container.active .slider-track {
+      background: #4caf50;
+    }
+  </style>
+</head>
+<body>
+  <div class="slider-container" id="slider">
+    <div class="slider-track"></div>
+    <div class="slider-button" id="sliderButton"></div>
+  </div>
+
+  <script>
+    const sliderContainer = document.getElementById("slider");
+    const sliderButton = document.getElementById("sliderButton");
+
+    const sliderWidth = sliderContainer.offsetWidth;
+    const buttonWidth = sliderButton.offsetWidth;
+
+    let isDragging = false;
+
+    // Inicia el arrastre
+    sliderButton.addEventListener("mousedown", () => {
+      isDragging = true;
+      sliderButton.classList.add("active");
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+
+      const rect = sliderContainer.getBoundingClientRect();
+      let newLeft = e.clientX - rect.left - buttonWidth / 2;
+
+      // Limitar el movimiento dentro del contenedor
+      if (newLeft < 0) newLeft = 0;
+      if (newLeft > sliderWidth - buttonWidth) newLeft = sliderWidth - buttonWidth;
+
+      sliderButton.style.left = `${newLeft}px`;
+
+      // Cambiar el color del fondo en tiempo real
+      sliderContainer.classList.toggle("active", newLeft >= sliderWidth - buttonWidth);
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isDragging) return;
+      isDragging = false;
+      sliderButton.classList.remove("active");
+
+      // Verificar si el botón llegó al final
+      const finalPosition = parseInt(sliderButton.style.left, 10) || 0;
+      if (finalPosition >= sliderWidth - buttonWidth) {
+        console.log("Botón llegó al final, ejecutando webhook...");
+
+        // Llamada al webhook
+        fetch("https://eu-apia.coolkit.cc/v2/smartscene2/webhooks/execute?id=e3f07f80d5884106b72b719ee61dba18", {
+          method: "GET"
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Webhook ejecutado correctamente");
+            } else {
+              console.error("Error al ejecutar el webhook:", response.status);
+            }
+          })
+          .catch((error) => console.error("Error al ejecutar el webhook:", error));
+      } else {
+        console.log("Botón no llegó al final, reiniciando posición...");
+        // Resetear la posición del botón
+        sliderButton.style.left = "0";
+        sliderContainer.classList.remove("active");
+      }
+    });
+  </script>
+</body>
+</html>
